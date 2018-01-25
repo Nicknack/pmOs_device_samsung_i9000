@@ -1,0 +1,94 @@
+# Kernel config based on: arch/arm/configs/custom_galaxysmtd_defconfig
+
+pkgname="linux-samsung-i9000"
+pkgver=3.0.101
+pkgrel=0
+pkgdesc="Samsung Galaxy S kernel fork"
+arch="armhf"
+_carch="arm"
+_flavor="samsung-i9000"
+url="https://kernel.org"
+license="GPL2"
+options="!strip !check !tracedeps"
+makedepends="perl sed installkernel bash gmp-dev bc linux-headers elfutils-dev findutils busybox-static-armhf xz"
+HOSTCC="${CC:-gcc}"
+HOSTCC="${HOSTCC#${CROSS_COMPILE}}"
+
+# Source
+_repository="android_kernel_samsung_aries"
+_commit="e3d3258658c5dc1b6b3de7309bcd83c6fb055f9f"
+_config="config-${_flavor}.${arch}"
+
+source="
+	$pkgname-$_commit.tar.gz::https://github.com/xc-racer99/${_repository}/archive/${_commit}.tar.gz
+	$_config
+	compiler-gcc6.h
+	init
+"
+
+
+builddir="$srcdir/${_repository}-${_commit}"
+
+prepare() {
+	default_prepare
+
+	# Use Alpine's busybox.static instead of the pre-compiled busybox shipped
+	# with the source
+	cp -v /usr/$(arch_to_hostspec $arch)/bin/busybox.static \
+		"$builddir"/usr/galaxysmtd_initramfs_files/busybox
+
+	# use custom init script in the initramfs which loads the initramfs from
+	# the kernel2 partition ("isorec")
+	cp -v "$srcdir"/init "$builddir"/usr/galaxysmtd_initramfs_files/init
+
+	# gcc6 support
+	cp -v "$srcdir/compiler-gcc6.h" "$builddir/include/linux/"
+
+	# Remove -Werror from all makefiles
+	find . -type f -name Makefile -print0 | \
+		xargs -0 sed -i 's/-Werror-/-W/g'
+	find . -type f -name Makefile -print0 | \
+		xargs -0 sed -i 's/-Werror//g'
+
+	# Prepare kernel config ('yes ""' for kernels lacking olddefconfig)
+	cp "$srcdir"/$_config "$builddir"/.config
+	yes "" | make ARCH="$_carch" HOSTCC="$HOSTCC" oldconfig
+
+}
+
+menuconfig() {
+	cd "$builddir"
+	make ARCH="$_carch" menuconfig
+	cp .config "$startdir"/$_config
+}
+
+build() {
+	unset LDFLAGS
+	make ARCH="$_carch" CC="${CC:-gcc}" \
+		KBUILD_BUILD_VERSION="$((pkgrel + 1 ))-postmarketOS"
+}
+
+package() {
+	# kernel.release
+	install -D "$builddir/include/config/kernel.release" \
+		"$pkgdir/usr/share/kernel/$_flavor/kernel.release"
+
+	# zImage (find the right one)
+	cd "$builddir/arch/$_carch/boot"
+	_target="$pkgdir/boot/vmlinuz-$_flavor"
+	for _zimg in zImage-dtb Image.gz-dtb *zImage Image; do
+		[ -e "$_zimg" ] || continue
+		msg "zImage found: $_zimg"
+		install -Dm644 "$_zimg" "$_target"
+		break
+	done
+	if ! [ -e "$_target" ]; then
+		error "Could not find zImage in $PWD!"
+		return 1
+	fi
+}
+
+sha512sums="3cc3c0937811b2e0f0a17bb09cd8ef6b83392c1b7fc4d46360ea8836a76cca7cbf95584e3ca5161eeff6e09c9af10180d48601868fc55eb2cdd0930843dfac08  linux-samsung-i9000-e3d3258658c5dc1b6b3de7309bcd83c6fb055f9f.tar.gz
+0756847d4305c5aa5578ee2190d6b9b91b01b33e30ac460d327b0d9ca2b3feba9e56ec6e193a06ea69e42dfdd509153cce0f8ffec611ac211e3a3552773258ac  config-samsung-i9000.armhf
+d80980e9474c82ba0ef1a6903b434d8bd1b092c40367ba543e72d2c119301c8b2d05265740e4104ca1ac5d15f6c4aa49e8776cb44264a9a28dc551e0d1850dcc  compiler-gcc6.h
+5b12f023c405df721746b7ebfa379b229e839a03f2371696ea384aa70ba36e7c4570468b52c848a44b7a8a6be1961f0250afd48aeecab84cd566bd091282b831  init"

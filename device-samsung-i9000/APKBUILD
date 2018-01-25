@@ -1,0 +1,22 @@
+# Reference: <https://postmarketos.org/devicepkg>
+pkgname="device-samsung-i9000"
+pkgdesc="Samsung Galaxy S"
+pkgver=1
+pkgrel=0
+url="https://postmarketos.org"
+license="MIT"
+arch="noarch"
+options="!check"
+depends="linux-samsung-i9000 mesa-dri-swrast"
+makedepends="devicepkg-dev"
+source="deviceinfo"
+
+build() {
+	devicepkg_build $startdir $pkgname
+}
+
+package() {
+	devicepkg_package $startdir $pkgname
+}
+
+sha512sums="4c150738b486266d95ad85ab1f593c7291d2904822310c22a60c9fc528a4e622d364cd00d37d7eddd4d4a8d07d3e91f795a35df73acbac5b273625644de2b48a  deviceinfo"
