@@ -7,9 +7,13 @@ url="https://postmarketos.org"
 license="MIT"
 arch="noarch"
 options="!check"
-depends="linux-samsung-i9000 mesa-dri-swrast"
+depends="linux-samsung-i9000 firmware-samsung-i9000 mesa-dri-swrast"
 makedepends="devicepkg-dev"
-source="deviceinfo"
+source="
+	deviceinfo
+	90-android-touch-dev.rules
+	modules-load.conf
+"
 
 build() {
 	devicepkg_build $startdir $pkgname
@@ -17,6 +21,15 @@ build() {
 
 package() {
 	devicepkg_package $startdir $pkgname
+	
+	install -D -m644 "$srcdir"/90-android-touch-dev.rules \
+		"$pkgdir"/etc/udev/rules.d/90-android-touch-dev.rules
+		
+		
+	install -Dm644 "$srcdir"/modules-load.conf \
+		"$pkgdir"/etc/modules-load.d/00-${pkgname}.conf
 }
 
-sha512sums="4c150738b486266d95ad85ab1f593c7291d2904822310c22a60c9fc528a4e622d364cd00d37d7eddd4d4a8d07d3e91f795a35df73acbac5b273625644de2b48a  deviceinfo"
+sha512sums="b30d0a9f4aad04f2293e0b91b10ad20ed48652ea3e4cc7d0ac9414b3f2ed59c781e1270f38e5c8eed65904cd9473f833d33b99f9cdc68700b3f26a49a77f7c02  deviceinfo
+630617f246ac109c9dac0337919140148d6569a5898fd36c6cab8406cddd6f363fe88724ad55b255ab718b3e226510c74d90d23f26d819ce0a95e2493a61790a  90-android-touch-dev.rules
+61e8becbf6fa7c1c6c42e481083f5981ae7af33a48cbc53e817d8ac2c6a8e4f67a54b32ae3b8f5f25f7b412165a849dc93a629110dc47b0d16927bf2a12eb7e1  modules-load.conf"

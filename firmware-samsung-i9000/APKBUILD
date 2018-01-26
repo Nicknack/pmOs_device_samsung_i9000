@@ -1,0 +1,24 @@
+pkgname=firmware-samsung-i9000
+pkgver=0
+pkgrel=0
+pkgdesc="Samsung Galaxy S Firmware"
+url="https://github.com/TheMuppets/proprietary_vendor_samsung"
+arch="noarch"
+license="proprietary"
+
+# Source
+_commit="e279577315cff93398ad6ef1e69e159f4a715868"
+source="$pkgname-$_commit.tar.gz::$url/archive/${_commit}.tar.gz"
+options="!check !strip"
+
+package() {
+	cd "$srcdir/proprietary_vendor_samsung-${_commit}"
+
+	# Wifi
+	for _i in fw_bcm4329.bin fw_bcm4329_apsta.bin nvram_net.txt bcm4329.hcd; do
+		install -Dm644 "aries-common/proprietary/$_i" \
+		"$pkgdir/lib/firmware/postmarketos/$_i"
+	done
+}
+
+sha512sums="5871fae2695fa021c60b83828120669b0c9d42da653d31c2b03999a7dae3e565ab72468d29c30bb812d86c1cd2fddb5a2cf7cf9a9ef6525ff5397d000d44f448  firmware-samsung-i9000-e279577315cff93398ad6ef1e69e159f4a715868.tar.gz"
